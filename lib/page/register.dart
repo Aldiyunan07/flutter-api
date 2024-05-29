@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -15,6 +18,45 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isObscure = true;
 
   final formKey = GlobalKey<FormState>();
+  Future<void> registerApi(
+      String fullName, String username, String password) async {
+    var api = "https://canihave.my.id:443/users";
+
+    final response = await http.post(Uri.parse(api),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'fullname': fullName,
+          'username': username,
+          'password': password
+        }));
+
+    if (response.statusCode == 201) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Register Berhasil"),
+          ),
+        );
+
+        Future.delayed(Duration(milliseconds: 500), () {
+          Navigator.pop(context);
+        });
+      });
+    } else if (response.statusCode == 400) {
+      var body = jsonDecode(response.body);
+
+      var message = body['message'];
+
+      Future.delayed(Duration(milliseconds: 300), () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +140,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   width: 300,
                   height: 50,
                   child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          registerApi(fullnameController.text,
+                              usernameController.text, passwordController.text);
+                        }
+                      },
                       child: const Text(
                         "Register",
                         style: TextStyle(
